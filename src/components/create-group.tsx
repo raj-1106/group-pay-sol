@@ -18,6 +18,8 @@ export const CreateGroup = () => {
   const navigate = useNavigate();
   const { createGroup: createOnChainGroup } = useRoomiesplit();
   
+  console.log('CreateGroup rendered, connected:', connected, 'publicKey:', publicKey?.toString());
+  
   const [groupName, setGroupName] = useState('');
   const [groupDescription, setGroupDescription] = useState('');
   const [memberAddress, setMemberAddress] = useState('');
