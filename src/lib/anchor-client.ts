@@ -1,8 +1,9 @@
+
 import { AnchorProvider, Program, setProvider } from '@coral-xyz/anchor';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey, SystemProgram } from '@solana/web3.js';
 import { useMemo } from 'react';
-import { IDL, RoomiesplitIDL } from './idl';
+import { IDL } from './idl';
 
 // Your deployed program ID
 const PROGRAM_ID = new PublicKey('CFTz6LKRNHgWJhYqPvQFYVjYAiCnkdLbK2KM5FDoUgPg');
@@ -29,8 +30,14 @@ export const useAnchorProgram = () => {
 
   const program = useMemo(() => {
     if (!provider) return null;
-    setProvider(provider);
-    return new Program(IDL as any, provider);
+    
+    try {
+      setProvider(provider);
+      return new Program(IDL, provider);
+    } catch (error) {
+      console.error('Error creating Anchor program:', error);
+      return null;
+    }
   }, [provider]);
 
   return { program, provider };

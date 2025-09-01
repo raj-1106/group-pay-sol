@@ -1,3 +1,4 @@
+
 import { Idl } from '@coral-xyz/anchor';
 
 export type RoomiesplitIDL = {
@@ -8,8 +9,6 @@ export type RoomiesplitIDL = {
     "spec": "0.1.0",
     "description": "Created with Anchor"
   },
-  "version": "0.1.0",
-  "name": "roomiesplit",
   "instructions": [
     {
       "name": "createGroup",
@@ -196,7 +195,9 @@ export type RoomiesplitIDL = {
   ]
 };
 
-export const IDL: RoomiesplitIDL = {
+export const IDL: Idl = IDL_JSON as Idl;
+
+const IDL_JSON = {
   "address": "CFTz6LKRNHgWJhYqPvQFYVjYAiCnkdLbK2KM5FDoUgPg",
   "metadata": {
     "name": "roomiesplit",
@@ -204,8 +205,6 @@ export const IDL: RoomiesplitIDL = {
     "spec": "0.1.0",
     "description": "Created with Anchor"
   },
-  "version": "0.1.0",
-  "name": "roomiesplit",
   "instructions": [
     {
       "name": "createGroup",
@@ -216,7 +215,7 @@ export const IDL: RoomiesplitIDL = {
           "isSigner": false
         },
         {
-          "name": "creator",
+          "name": "creator", 
           "isMut": true,
           "isSigner": true
         },
@@ -376,7 +375,7 @@ export const IDL: RoomiesplitIDL = {
     },
     {
       "code": 6001,
-      "name": "NotMember",
+      "name": "NotMember", 
       "msg": "User is not a member of this group"
     },
     {
