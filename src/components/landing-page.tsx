@@ -56,7 +56,10 @@ export const LandingPage = () => {
               <Button 
                 variant="hero" 
                 size="lg"
-                onClick={() => navigate('/create-group')}
+                onClick={() => {
+                  console.log('Create group button clicked, navigating to /create-group');
+                  navigate('/create-group');
+                }}
                 className="text-lg px-8 py-4 h-auto"
               >
                 Create Your First Group
@@ -107,7 +110,10 @@ export const LandingPage = () => {
             <Button 
               variant="hero" 
               size="lg"
-              onClick={() => navigate('/create-group')}
+              onClick={() => {
+                console.log('Get started button clicked, navigating to /create-group');
+                navigate('/create-group');
+              }}
             >
               Get Started Now
             </Button>
