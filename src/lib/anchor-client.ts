@@ -3,6 +3,7 @@ import { AnchorProvider, Program, setProvider } from '@coral-xyz/anchor';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey, SystemProgram } from '@solana/web3.js';
 import { useMemo } from 'react';
+import { Buffer } from 'buffer';
 import { IDL } from './idl';
 
 // Your deployed program ID
