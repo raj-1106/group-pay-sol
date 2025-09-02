@@ -67,7 +67,11 @@ export const CreateGroup = () => {
   };
 
   const createGroup = async () => {
+    console.log('createGroup called - connected:', connected, 'publicKey:', publicKey?.toString());
+    console.log('useBlockchain:', useBlockchain, 'groupName:', groupName, 'members:', members);
+    
     if (!connected || !publicKey) {
+      console.log('Wallet not connected, showing toast');
       toast({
         title: "Wallet Not Connected",
         description: "Please connect your wallet first",
@@ -98,6 +102,7 @@ export const CreateGroup = () => {
     
     try {
       if (useBlockchain) {
+        console.log('Creating group on-chain with members:', members);
         // Create group on-chain using Anchor
         const result = await createOnChainGroup(members);
         

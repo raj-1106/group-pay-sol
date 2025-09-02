@@ -35,11 +35,15 @@ export const useAnchorProgram = () => {
   }, [connection, wallet]);
 
   const program = useMemo(() => {
+    console.log('Creating program - provider available:', !!provider);
     if (!provider) return null;
     
     try {
+      console.log('Setting provider and creating program...');
       setProvider(provider);
-      return new Program(IDL, provider);
+      const newProgram = new Program(IDL, provider);
+      console.log('Program created successfully:', !!newProgram);
+      return newProgram;
     } catch (error) {
       console.error('Error creating Anchor program:', error);
       return null;

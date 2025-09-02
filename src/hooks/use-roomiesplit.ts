@@ -30,7 +30,11 @@ export const useRoomiesplit = () => {
   const { toast } = useToast();
 
   const createGroup = async (memberAddresses: string[]) => {
+    console.log('useRoomiesplit createGroup called with:', memberAddresses);
+    console.log('program:', !!program, 'publicKey:', publicKey?.toString(), 'signTransaction:', !!signTransaction);
+    
     if (!program || !publicKey || !signTransaction) {
+      console.log('Missing requirements - program:', !!program, 'publicKey:', !!publicKey, 'signTransaction:', !!signTransaction);
       throw new Error('Wallet not connected or program not available');
     }
 
