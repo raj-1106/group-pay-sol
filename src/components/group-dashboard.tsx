@@ -106,7 +106,7 @@ export const GroupDashboard = () => {
 
     toast({
       title: "Expense Added!",
-      description: `Added "${expenseDescription}" for $${expenseAmount}`,
+      description: `Added "${expenseDescription}" for ₹${expenseAmount}`,
     });
   };
 
@@ -299,7 +299,7 @@ export const GroupDashboard = () => {
                               />
                             </div>
                             <div>
-                              <Label htmlFor="amount">Amount ($) *</Label>
+                              <Label htmlFor="amount">Amount (₹) *</Label>
                               <Input
                                 id="amount"
                                 type="number"
@@ -350,7 +350,7 @@ export const GroupDashboard = () => {
                             {member === publicKey?.toString() ? 'You' : formatAddress(member)}
                           </span>
                           <span className={`font-bold ${balance > 0 ? 'text-green-500' : balance < 0 ? 'text-red-500' : 'text-muted-foreground'}`}>
-                            {balance > 0 ? '+' : ''}${balance.toFixed(2)}
+                            {balance > 0 ? '+' : ''}₹{balance.toFixed(2)}
                           </span>
                         </div>
                       ))}
@@ -369,7 +369,7 @@ export const GroupDashboard = () => {
                                 {settlement.from === publicKey?.toString() ? 'You owe' : formatAddress(settlement.from) + ' owes'}
                               </span>
                               {' '}
-                              <span className="font-bold text-primary">${settlement.amount.toFixed(2)}</span>
+                              <span className="font-bold text-primary">₹{settlement.amount.toFixed(2)}</span>
                               {' '}
                               <span>
                                 to {settlement.to === publicKey?.toString() ? 'you' : formatAddress(settlement.to)}
@@ -401,7 +401,7 @@ export const GroupDashboard = () => {
                           <div key={expense.id} className="p-4 bg-muted/30 rounded-lg">
                             <div className="flex items-center justify-between mb-2">
                               <h4 className="font-medium">{expense.description}</h4>
-                              <span className="font-bold text-lg">${expense.amount.toFixed(2)}</span>
+                              <span className="font-bold text-lg">₹{expense.amount.toFixed(2)}</span>
                             </div>
                             <div className="text-sm text-muted-foreground">
                               <p>Paid by: {expense.paidBy === publicKey?.toString() ? 'You' : formatAddress(expense.paidBy)}</p>
