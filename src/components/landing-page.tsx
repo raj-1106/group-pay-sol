@@ -35,7 +35,7 @@ export const LandingPage = () => {
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-gradient-primary rounded-lg"></div>
             <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-              GroupPay
+              RoomieSplit
             </h1>
           </div>
           <WalletMultiButton className="!bg-gradient-primary hover:!shadow-glow !transition-all !duration-300" />
