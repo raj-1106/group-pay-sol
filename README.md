@@ -1,73 +1,53 @@
-# Welcome to your Lovable project
+# RoomieSplit 💰
 
-## Project info
+A decentralized expense splitting app built on Solana blockchain for roommates and groups.
 
-**URL**: https://lovable.dev/projects/a925c1b8-d11a-4a41-a9fc-098d3a3358c3
+## 🚀 Features
 
-## How can I edit this code?
+- **On-chain Group Management**: Create and manage expense groups on Solana
+- **Smart Expense Tracking**: Add expenses with automatic balance calculations
+- **Wallet Integration**: Connect with Phantom and other Solana wallets
+- **Real-time Balances**: See who owes what in real-time
+- **Secure & Transparent**: All transactions recorded on blockchain
 
-There are several ways of editing your application.
+## 🛠️ Tech Stack
 
-**Use Lovable**
+- **Frontend**: React, TypeScript, Tailwind CSS
+- **Blockchain**: Solana, Anchor Framework
+- **UI Components**: Radix UI, shadcn/ui
+- **State Management**: React Query
+- **Wallet**: Solana Wallet Adapter
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/a925c1b8-d11a-4a41-a9fc-098d3a3358c3) and start prompting.
+## 📦 Installation
 
-Changes made via Lovable will be committed automatically to this repo.
+```bash
+# Clone the repository
+git clone <your-repo-url>
 
-**Use your preferred IDE**
+# Install dependencies
+npm install
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Start development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## 🎯 Usage
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+1. **Connect Wallet**: Connect your Solana wallet (Phantom recommended)
+2. **Create Group**: Add roommates' wallet addresses to create a group
+3. **Add Expenses**: Record shared expenses with descriptions
+4. **Track Balances**: View who owes what to whom
+5. **Settle Up**: Use balance information to settle debts
 
-**Use GitHub Codespaces**
+## 🌐 Live Demo
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Visit the live application: [RoomieSplit App](https://lovable.dev/projects/a925c1b8-d11a-4a41-a9fc-098d3a3358c3)
 
-## What technologies are used for this project?
+## 💡 Why Blockchain?
 
-This project is built with:
+- **Transparency**: All expenses are publicly verifiable
+- **Trust**: No single point of failure or manipulation
+- **Immutable Records**: Permanent expense history
+- **Global Access**: Works anywhere with internet
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/a925c1b8-d11a-4a41-a9fc-098d3a3358c3) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+Built with ❤️ for hassle-free expense splitting
