@@ -23,7 +23,8 @@ export const CreateGroup = () => {
   const [groupName, setGroupName] = useState('');
   const [groupDescription, setGroupDescription] = useState('');
   const [memberName, setMemberName] = useState('');
-  const [members, setMembers] = useState<string[]>([]);
+  const [memberAddress, setMemberAddress] = useState('');
+  const [members, setMembers] = useState<Array<{name: string, address: string}>>([]);
   const [isCreating, setIsCreating] = useState(false);
   const [useBlockchain, setUseBlockchain] = useState(false);
 
@@ -37,21 +38,52 @@ export const CreateGroup = () => {
       return;
     }
 
-    if (members.includes(memberName.trim())) {
+    if (!memberAddress.trim()) {
       toast({
-        title: "Duplicate Name",
-        description: "This name is already in the group",
+        title: "Invalid Address",
+        description: "Please enter a valid Solana wallet address",
         variant: "destructive",
       });
       return;
     }
 
-    setMembers([...members, memberName.trim()]);
+    // Basic validation for Solana address
+    try {
+      new PublicKey(memberAddress.trim());
+    } catch {
+      toast({
+        title: "Invalid Address",
+        description: "Please enter a valid Solana wallet address",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (members.some(member => member.address === memberAddress.trim())) {
+      toast({
+        title: "Duplicate Address",
+        description: "This address is already in the group",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (members.some(member => member.name === memberName.trim())) {
+      toast({
+        title: "Duplicate Name",
+        description: "This name is already used in the group",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setMembers([...members, { name: memberName.trim(), address: memberAddress.trim() }]);
     setMemberName('');
+    setMemberAddress('');
   };
 
-  const removeMember = (name: string) => {
-    setMembers(members.filter(member => member !== name));
+  const removeMember = (memberToRemove: {name: string, address: string}) => {
+    setMembers(members.filter(member => member.address !== memberToRemove.address));
   };
 
   const createGroup = async () => {
@@ -91,15 +123,16 @@ export const CreateGroup = () => {
     try {
       if (useBlockchain) {
         console.log('Creating group on-chain with members:', members);
-        // Create group on-chain using Anchor
-        const result = await createOnChainGroup(members);
+        // Create group on-chain using Anchor - extract addresses
+        const memberAddresses = members.map(member => member.address);
+        const result = await createOnChainGroup(memberAddresses);
         
         const groupData = {
           id: result.groupAddress.toString(),
           name: groupName,
           description: groupDescription,
           creator: publicKey.toString(),
-          members: [publicKey.toString(), ...members],
+          members: [{ name: 'You', address: publicKey.toString() }, ...members],
           expenses: [],
           createdAt: new Date().toISOString(),
           isOnChain: true,
@@ -121,7 +154,7 @@ export const CreateGroup = () => {
           name: groupName,
           description: groupDescription,
           creator: publicKey.toString(),
-          members: [publicKey.toString(), ...members],
+          members: [{ name: 'You', address: publicKey.toString() }, ...members],
           expenses: [],
           createdAt: new Date().toISOString(),
           isOnChain: false,
@@ -243,16 +276,23 @@ export const CreateGroup = () => {
               {/* Add Members */}
               <div className="space-y-4">
                 <Label>Group Members</Label>
-                <div className="flex space-x-2">
+                <div className="space-y-2">
                   <Input
                     placeholder="Enter member name"
                     value={memberName}
                     onChange={(e) => setMemberName(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && addMember()}
                   />
-                  <Button onClick={addMember} variant="outline">
-                    <Plus className="h-4 w-4" />
-                  </Button>
+                  <div className="flex space-x-2">
+                    <Input
+                      placeholder="Enter Solana wallet address"
+                      value={memberAddress}
+                      onChange={(e) => setMemberAddress(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && addMember()}
+                    />
+                    <Button onClick={addMember} variant="outline">
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
 
                 {/* Current User */}
@@ -275,9 +315,9 @@ export const CreateGroup = () => {
                   <div key={index} className="bg-muted/30 rounded-lg p-3">
                     <div className="flex items-center justify-between">
                       <div>
-                        <span className="font-medium">{member}</span>
+                        <span className="font-medium">{member.name}</span>
                         <p className="text-sm text-muted-foreground">
-                          Member
+                          {member.address.slice(0, 8)}...{member.address.slice(-8)}
                         </p>
                       </div>
                       <Button
@@ -293,7 +333,7 @@ export const CreateGroup = () => {
 
                 {members.length === 0 && (
                   <p className="text-muted-foreground text-sm">
-                    Add names of friends you want to share expenses with
+                    Add names and wallet addresses of friends you want to share expenses with
                   </p>
                 )}
               </div>
