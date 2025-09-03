@@ -24,7 +24,17 @@ export default defineConfig(({ mode }) => ({
     'process.env': {},
   },
   optimizeDeps: {
-    include: ['buffer']
+    include: ['buffer', '@solana/web3.js', '@coral-xyz/anchor']
+  },
+  build: {
+    rollupOptions: {
+      external: [],
+      output: {
+        globals: {
+          buffer: 'Buffer'
+        }
+      }
+    }
   },
   esbuild: {
     define: {

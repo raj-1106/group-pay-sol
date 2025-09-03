@@ -6,10 +6,8 @@ import { useMemo } from 'react';
 import { Buffer } from 'buffer';
 import { IDL } from './idl';
 
-// Ensure Buffer is available globally for Anchor
-if (typeof window !== 'undefined') {
-  (window as any).Buffer = Buffer;
-}
+// Make Buffer available globally for Anchor
+globalThis.Buffer = Buffer;
 
 // Your deployed program ID
 const PROGRAM_ID = new PublicKey('CFTz6LKRNHgWJhYqPvQFYVjYAiCnkdLbK2KM5FDoUgPg');

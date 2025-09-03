@@ -125,7 +125,9 @@ export const CreateGroup = () => {
         console.log('Creating group on-chain with members:', members);
         // Create group on-chain using Anchor - extract addresses
         const memberAddresses = members.map(member => member.address);
+        console.log('Member addresses for blockchain:', memberAddresses);
         const result = await createOnChainGroup(memberAddresses);
+        console.log('On-chain group created successfully:', result);
         
         const groupData = {
           id: result.groupAddress.toString(),
