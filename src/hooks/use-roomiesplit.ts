@@ -35,13 +35,25 @@ export const useRoomiesplit = () => {
     
     if (!program || !publicKey || !signTransaction) {
       console.log('Missing requirements - program:', !!program, 'publicKey:', !!publicKey, 'signTransaction:', !!signTransaction);
-      throw new Error('Wallet not connected or program not available');
+      const errorMsg = !program ? 'Anchor program not available' : 'Wallet not connected properly';
+      toast({
+        title: "Connection Error",
+        description: errorMsg,
+        variant: "destructive",
+      });
+      throw new Error(errorMsg);
     }
 
     try {
+      console.log('Converting member addresses to PublicKeys...');
       const members = memberAddresses.map(addr => new PublicKey(addr));
+      console.log('Members as PublicKeys:', members.map(m => m.toString()));
+      
+      console.log('Getting group PDA...');
       const [groupPDA] = getGroupPDA(publicKey);
+      console.log('Group PDA:', groupPDA.toString());
 
+      console.log('Calling createGroup method on program...');
       const tx = await (program as any).methods
         .createGroup(members)
         .accounts({
@@ -51,17 +63,33 @@ export const useRoomiesplit = () => {
         })
         .rpc();
 
+      console.log('Transaction successful:', tx);
       toast({
         title: "Group Created!",
         description: `Transaction: ${tx.slice(0, 8)}...`,
       });
 
       return { groupAddress: groupPDA, transaction: tx };
-    } catch (error) {
-      console.error('Error creating group:', error);
+    } catch (error: any) {
+      console.error('Detailed error creating group:', error);
+      console.error('Error message:', error?.message);
+      console.error('Error logs:', error?.logs);
+      
+      let errorDescription = "Failed to create group on-chain";
+      
+      if (error?.message?.includes('Program log: AnchorError')) {
+        errorDescription = "Anchor program error - check if program is deployed";
+      } else if (error?.message?.includes('Account does not exist')) {
+        errorDescription = "Program not found - check network connection";
+      } else if (error?.message?.includes('insufficient funds')) {
+        errorDescription = "Insufficient SOL for transaction fees";
+      } else if (error?.message) {
+        errorDescription = error.message;
+      }
+      
       toast({
         title: "Error",
-        description: "Failed to create group on-chain",
+        description: errorDescription,
         variant: "destructive",
       });
       throw error;
