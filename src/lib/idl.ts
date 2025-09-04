@@ -41,6 +41,10 @@ const IDL_JSON = {
                 "kind": "account",
                 "path": "group.creator",
                 "account": "Group"
+              },
+              {
+                "kind": "arg",
+                "path": "group_id"
               }
             ]
           }
@@ -86,6 +90,10 @@ const IDL_JSON = {
       ],
       "args": [
         {
+          "name": "group_id",
+          "type": "u64"
+        },
+        {
           "name": "amount",
           "type": "u64"
         },
@@ -127,12 +135,21 @@ const IDL_JSON = {
                 "kind": "account",
                 "path": "group.creator",
                 "account": "Group"
+              },
+              {
+                "kind": "arg",
+                "path": "group_id"
               }
             ]
           }
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "group_id",
+          "type": "u64"
+        }
+      ]
     },
     {
       "name": "create_group",
@@ -165,6 +182,10 @@ const IDL_JSON = {
               {
                 "kind": "account",
                 "path": "creator"
+              },
+              {
+                "kind": "arg",
+                "path": "group_id"
               }
             ]
           }
@@ -180,6 +201,10 @@ const IDL_JSON = {
         }
       ],
       "args": [
+        {
+          "name": "group_id",
+          "type": "u64"
+        },
         {
           "name": "members",
           "type": {
@@ -293,6 +318,10 @@ const IDL_JSON = {
       "type": {
         "kind": "struct",
         "fields": [
+          {
+            "name": "group_id",
+            "type": "u64"
+          },
           {
             "name": "creator",
             "type": "pubkey"
