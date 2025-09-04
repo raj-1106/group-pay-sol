@@ -76,6 +76,19 @@ export const useRoomiesplit = () => {
       const [groupPDA, bump] = getGroupPDA(publicKey);
       console.log('Group PDA:', groupPDA.toString());
       console.log('PDA bump:', bump);
+      
+      // Check if group already exists
+      try {
+        const existingGroup = await (program as any).account.group.fetch(groupPDA);
+        if (existingGroup) {
+          throw new Error('Group already exists for this wallet. Each wallet can only create one group.');
+        }
+      } catch (fetchError: any) {
+        // If fetch fails, group doesn't exist - this is good, we can proceed
+        if (!fetchError.message?.includes('Account does not exist')) {
+          console.log('Unexpected error checking existing group:', fetchError);
+        }
+      }
 
       console.log('Step 3: Preparing transaction...');
       console.log('Transaction accounts:', {
