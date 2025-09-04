@@ -17,6 +17,7 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      buffer: 'buffer',
     },
   },
   define: {
@@ -24,7 +25,7 @@ export default defineConfig(({ mode }) => ({
     'process.env': {},
   },
   optimizeDeps: {
-    include: ['buffer', '@solana/web3.js', '@coral-xyz/anchor']
+    include: ['buffer', '@solana/web3.js', '@coral-xyz/anchor', 'bn.js']
   },
   build: {
     rollupOptions: {
