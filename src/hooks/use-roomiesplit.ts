@@ -30,12 +30,27 @@ export const useRoomiesplit = () => {
   const { toast } = useToast();
 
   const createGroup = async (memberAddresses: string[]) => {
-    console.log('useRoomiesplit createGroup called with:', memberAddresses);
-    console.log('program:', !!program, 'publicKey:', publicKey?.toString(), 'signTransaction:', !!signTransaction);
+    console.log('=== CREATE GROUP DEBUG START ===');
+    console.log('Input memberAddresses:', memberAddresses);
+    console.log('Program available:', !!program);
+    console.log('PublicKey available:', !!publicKey);
+    console.log('SignTransaction available:', !!signTransaction);
+    
+    // Additional program debugging
+    if (program) {
+      console.log('Program methods available:', Object.keys((program as any).methods || {}));
+      console.log('Program IDL version:', (program as any).idl?.version);
+      console.log('Program provider endpoint:', (program as any).provider?.connection?.rpcEndpoint);
+    }
     
     if (!program || !publicKey || !signTransaction) {
-      console.log('Missing requirements - program:', !!program, 'publicKey:', !!publicKey, 'signTransaction:', !!signTransaction);
-      const errorMsg = !program ? 'Anchor program not available' : 'Wallet not connected properly';
+      const missing = [];
+      if (!program) missing.push('program');
+      if (!publicKey) missing.push('publicKey');
+      if (!signTransaction) missing.push('signTransaction');
+      
+      console.log('Missing requirements:', missing);
+      const errorMsg = `Missing: ${missing.join(', ')}`;
       toast({
         title: "Connection Error",
         description: errorMsg,
@@ -45,15 +60,39 @@ export const useRoomiesplit = () => {
     }
 
     try {
-      console.log('Converting member addresses to PublicKeys...');
-      const members = memberAddresses.map(addr => new PublicKey(addr));
+      console.log('Step 1: Converting member addresses to PublicKeys...');
+      const members = memberAddresses.map((addr, index) => {
+        console.log(`  Converting address ${index}: ${addr}`);
+        try {
+          return new PublicKey(addr);
+        } catch (err) {
+          console.error(`  Failed to convert address ${index}:`, err);
+          throw new Error(`Invalid address at index ${index}: ${addr}`);
+        }
+      });
       console.log('Members as PublicKeys:', members.map(m => m.toString()));
       
-      console.log('Getting group PDA...');
-      const [groupPDA] = getGroupPDA(publicKey);
+      console.log('Step 2: Getting group PDA...');
+      const [groupPDA, bump] = getGroupPDA(publicKey);
       console.log('Group PDA:', groupPDA.toString());
+      console.log('PDA bump:', bump);
 
-      console.log('Calling createGroup method on program...');
+      console.log('Step 3: Preparing transaction...');
+      console.log('Transaction accounts:', {
+        group: groupPDA.toString(),
+        creator: publicKey.toString(),
+        systemProgram: SystemProgram.programId.toString()
+      });
+
+      console.log('Step 4: Calling createGroup method...');
+      
+      // Check if the method exists
+      if (!(program as any).methods?.createGroup) {
+        console.error('createGroup method not found on program');
+        console.log('Available methods:', Object.keys((program as any).methods || {}));
+        throw new Error('createGroup method not available on program');
+      }
+
       const tx = await (program as any).methods
         .createGroup(members)
         .accounts({
@@ -63,7 +102,10 @@ export const useRoomiesplit = () => {
         })
         .rpc();
 
-      console.log('Transaction successful:', tx);
+      console.log('Step 5: Transaction successful!');
+      console.log('Transaction signature:', tx);
+      console.log('=== CREATE GROUP DEBUG END ===');
+      
       toast({
         title: "Group Created!",
         description: `Transaction: ${tx.slice(0, 8)}...`,
@@ -71,21 +113,41 @@ export const useRoomiesplit = () => {
 
       return { groupAddress: groupPDA, transaction: tx };
     } catch (error: any) {
-      console.error('Detailed error creating group:', error);
+      console.log('=== CREATE GROUP ERROR DEBUG ===');
+      console.error('Full error object:', error);
+      console.error('Error name:', error?.name);
       console.error('Error message:', error?.message);
+      console.error('Error code:', error?.code);
       console.error('Error logs:', error?.logs);
+      console.error('Error stack:', error?.stack);
+      
+      // Check for specific Solana/Anchor errors
+      if (error?.message) {
+        console.log('Analyzing error message:', error.message);
+        if (error.message.includes('0x0')) {
+          console.log('Program error code 0x0 detected');
+        }
+        if (error.message.includes('Program log:')) {
+          console.log('Program logs found in error');
+        }
+      }
       
       let errorDescription = "Failed to create group on-chain";
       
       if (error?.message?.includes('Program log: AnchorError')) {
         errorDescription = "Anchor program error - check if program is deployed";
       } else if (error?.message?.includes('Account does not exist')) {
-        errorDescription = "Program not found - check network connection";
+        errorDescription = "Program not found on devnet - check deployment";
       } else if (error?.message?.includes('insufficient funds')) {
         errorDescription = "Insufficient SOL for transaction fees";
+      } else if (error?.message?.includes('0x0')) {
+        errorDescription = "Program execution failed - check program logic";
       } else if (error?.message) {
         errorDescription = error.message;
       }
+      
+      console.log('Final error description:', errorDescription);
+      console.log('=== CREATE GROUP ERROR DEBUG END ===');
       
       toast({
         title: "Error",

@@ -17,10 +17,19 @@ export const useAnchorProgram = () => {
   const wallet = useWallet();
 
   const provider = useMemo(() => {
+    console.log('useAnchorProgram - wallet state:', {
+      connected: wallet.connected,
+      publicKey: wallet.publicKey?.toString(),
+      hasSignTransaction: !!wallet.signTransaction,
+      hasSignAllTransactions: !!wallet.signAllTransactions
+    });
+    
     if (!wallet.publicKey || !wallet.signTransaction || !wallet.signAllTransactions) {
+      console.log('Provider creation failed - missing wallet requirements');
       return null;
     }
     
+    console.log('Creating AnchorProvider with connection endpoint:', connection.rpcEndpoint);
     return new AnchorProvider(
       connection,
       {
@@ -33,20 +42,30 @@ export const useAnchorProgram = () => {
   }, [connection, wallet]);
 
   const program = useMemo(() => {
-    console.log('Creating program - provider available:', !!provider);
-    if (!provider) return null;
+    console.log('Program creation - provider available:', !!provider);
+    console.log('Program ID:', PROGRAM_ID.toString());
+    console.log('Connection endpoint:', connection.rpcEndpoint);
+    
+    if (!provider) {
+      console.log('No provider available for program creation');
+      return null;
+    }
     
     try {
       console.log('Setting provider and creating program...');
       setProvider(provider);
       const newProgram = new Program(IDL, provider);
-      console.log('Program created successfully:', !!newProgram);
+      console.log('Program created successfully with methods:', Object.keys((newProgram as any).methods || {}));
       return newProgram;
     } catch (error) {
       console.error('Error creating Anchor program:', error);
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
       return null;
     }
-  }, [provider]);
+  }, [provider, connection]);
 
   return { program, provider };
 };
