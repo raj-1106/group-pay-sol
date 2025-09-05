@@ -27,6 +27,7 @@ export const CreateGroup = () => {
   const [members, setMembers] = useState<Array<{name: string, address: string}>>([]);
   const [isCreating, setIsCreating] = useState(false);
   const [useBlockchain, setUseBlockchain] = useState(false);
+  const [groupId, setGroupId] = useState(0);
 
   const addMember = () => {
     if (!memberName.trim()) {
@@ -126,7 +127,7 @@ export const CreateGroup = () => {
         // Create group on-chain using Anchor - extract addresses
         const memberAddresses = members.map(member => member.address);
         console.log('Member addresses for blockchain:', memberAddresses);
-        const result = await createOnChainGroup(memberAddresses);
+        const result = await createOnChainGroup(memberAddresses, groupId);
         console.log('On-chain group created successfully:', result);
         
         const groupData = {
@@ -251,6 +252,24 @@ export const CreateGroup = () => {
                   onCheckedChange={setUseBlockchain}
                 />
               </div>
+
+              {/* Group ID (only shown when blockchain is enabled) */}
+              {useBlockchain && (
+                <div className="space-y-2">
+                  <Label htmlFor="groupId">Group ID</Label>
+                  <Input
+                    id="groupId"
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={groupId}
+                    onChange={(e) => setGroupId(parseInt(e.target.value) || 0)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Use different IDs to create multiple groups with the same wallet
+                  </p>
+                </div>
+              )}
 
               {/* Group Name */}
               <div className="space-y-2">

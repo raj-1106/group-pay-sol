@@ -35,7 +35,7 @@ export const useAnchorProgram = () => {
   const program = useMemo(() => {
     if (!provider) return null;
     setProvider(provider);
-    return new Program(IDL as any, PROGRAM_ID, provider);
+    return new Program(IDL as any, provider);
   }, [provider]);
 
   return { program, provider };
