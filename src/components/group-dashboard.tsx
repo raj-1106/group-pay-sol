@@ -4,11 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Plus, Users, Receipt, TrendingUp, TrendingDown } from 'lucide-react';
+import { ArrowLeft, Plus, Users, Receipt, TrendingUp, TrendingDown, Trash, Edit } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface Expense {
@@ -38,8 +37,10 @@ export const GroupDashboard = () => {
   const [groups, setGroups] = useState<Group[]>([]);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
-  
-  // Add expense form state
+  const [isEditExpenseOpen, setIsEditExpenseOpen] = useState(false);
+
+  // Add/edit expense form state
+  const [expenseId, setExpenseId] = useState<string | null>(null);
   const [expenseDescription, setExpenseDescription] = useState('');
   const [expenseAmount, setExpenseAmount] = useState('');
   const [expensePaidBy, setExpensePaidBy] = useState('');
@@ -62,7 +63,20 @@ export const GroupDashboard = () => {
     }
   };
 
-  const addExpense = () => {
+  const saveGroups = (updatedGroups: Group[]) => {
+    localStorage.setItem('groups', JSON.stringify(updatedGroups));
+    setGroups(updatedGroups);
+  };
+
+  const resetExpenseForm = () => {
+    setExpenseId(null);
+    setExpenseDescription('');
+    setExpenseAmount('');
+    setExpensePaidBy('');
+    setExpenseParticipants([]);
+  };
+
+  const addOrEditExpense = () => {
     if (!selectedGroup || !expenseDescription.trim() || !expenseAmount || !expensePaidBy) {
       toast({
         title: "Missing Information",
@@ -72,65 +86,79 @@ export const GroupDashboard = () => {
       return;
     }
 
-    const newExpense: Expense = {
-      id: Date.now().toString(),
-      description: expenseDescription,
-      amount: parseFloat(expenseAmount),
-      paidBy: expensePaidBy,
-      participants: expenseParticipants.length > 0 ? expenseParticipants : selectedGroup.members,
-      date: new Date().toISOString(),
-    };
+    let updatedExpenses: Expense[];
+    if (expenseId) {
+      // Edit existing expense
+      updatedExpenses = selectedGroup.expenses.map(exp =>
+        exp.id === expenseId
+          ? { ...exp, description: expenseDescription, amount: parseFloat(expenseAmount), paidBy: expensePaidBy }
+          : exp
+      );
+    } else {
+      // Add new expense
+      const newExpense: Expense = {
+        id: Date.now().toString(),
+        description: expenseDescription,
+        amount: parseFloat(expenseAmount),
+        paidBy: expensePaidBy,
+        participants: expenseParticipants.length > 0 ? expenseParticipants : selectedGroup.members,
+        date: new Date().toISOString(),
+      };
+      updatedExpenses = [...selectedGroup.expenses, newExpense];
+    }
 
-    const updatedGroup = {
-      ...selectedGroup,
-      expenses: [...selectedGroup.expenses, newExpense]
-    };
+    const updatedGroup = { ...selectedGroup, expenses: updatedExpenses };
+    const updatedGroups = groups.map(g => g.id === updatedGroup.id ? updatedGroup : g);
 
-    const allGroups = JSON.parse(localStorage.getItem('groups') || '[]') as Group[];
-    const updatedGroups = allGroups.map(group => 
-      group.id === selectedGroup.id ? updatedGroup : group
-    );
-
-    localStorage.setItem('groups', JSON.stringify(updatedGroups));
+    saveGroups(updatedGroups);
     setSelectedGroup(updatedGroup);
-    setGroups(prev => prev.map(group => 
-      group.id === selectedGroup.id ? updatedGroup : group
-    ));
 
-    // Reset form
-    setExpenseDescription('');
-    setExpenseAmount('');
-    setExpensePaidBy('');
-    setExpenseParticipants([]);
+    resetExpenseForm();
     setIsAddExpenseOpen(false);
+    setIsEditExpenseOpen(false);
 
     toast({
-      title: "Expense Added!",
-      description: `Added "${expenseDescription}" for ₹${expenseAmount}`,
+      title: expenseId ? "Expense Updated!" : "Expense Added!",
+      description: expenseId
+        ? `Updated "${expenseDescription}" to ₹${expenseAmount}`
+        : `Added "${expenseDescription}" for ₹${expenseAmount}`,
     });
+  };
+
+  const deleteGroup = (groupId: string) => {
+    const updatedGroups = groups.filter(group => group.id !== groupId);
+    saveGroups(updatedGroups);
+
+    if (selectedGroup?.id === groupId) {
+      setSelectedGroup(updatedGroups.length > 0 ? updatedGroups[0] : null);
+    }
+
+    toast({
+      title: "Group Deleted",
+      description: "The group has been removed from your dashboard.",
+      variant: "destructive",
+    });
+  };
+
+  const editExpense = (expense: Expense) => {
+    setExpenseId(expense.id);
+    setExpenseDescription(expense.description);
+    setExpenseAmount(expense.amount.toString());
+    setExpensePaidBy(expense.paidBy);
+    setExpenseParticipants(expense.participants);
+    setIsEditExpenseOpen(true);
   };
 
   const calculateBalances = () => {
     if (!selectedGroup) return {};
     
     const balances: { [key: string]: number } = {};
-    
-    // Initialize balances
-    selectedGroup.members.forEach(member => {
-      balances[member] = 0;
-    });
+    selectedGroup.members.forEach(member => { balances[member] = 0; });
 
-    // Calculate what each person owes/is owed
     selectedGroup.expenses.forEach(expense => {
       const perPersonShare = expense.amount / expense.participants.length;
-      
-      // Person who paid gets credited
       balances[expense.paidBy] += expense.amount;
-      
-      // Each participant owes their share
-      expense.participants.forEach(participant => {
-        balances[participant] -= perPersonShare;
-      });
+      expense.participants.forEach(participant => { balances[participant] -= perPersonShare; });
     });
 
     return balances;
@@ -151,12 +179,7 @@ export const GroupDashboard = () => {
       debtors.forEach(([debtor, debtAmount]) => {
         if (Math.abs(debtAmount) > 0.01 && creditAmount > 0.01) {
           const settleAmount = Math.min(creditAmount, Math.abs(debtAmount));
-          settlements.push({
-            from: debtor,
-            to: creditor,
-            amount: settleAmount
-          });
-          
+          settlements.push({ from: debtor, to: creditor, amount: settleAmount });
           balances[creditor] -= settleAmount;
           balances[debtor] += settleAmount;
         }
@@ -215,11 +238,7 @@ export const GroupDashboard = () => {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center">
-            <Button
-              variant="ghost"
-              onClick={() => navigate('/')}
-              className="mr-4"
-            >
+            <Button variant="ghost" onClick={() => navigate('/')} className="mr-4">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back
             </Button>
@@ -243,20 +262,24 @@ export const GroupDashboard = () => {
               </CardHeader>
               <CardContent className="space-y-3">
                 {groups.map(group => (
-                  <button
-                    key={group.id}
-                    onClick={() => setSelectedGroup(group)}
-                    className={`w-full text-left p-3 rounded-lg transition-all ${
-                      selectedGroup?.id === group.id 
-                        ? 'bg-primary/20 border-primary/40' 
-                        : 'bg-muted/30 hover:bg-muted/50'
-                    } border`}
-                  >
-                    <h3 className="font-medium">{group.name}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {group.members.length} members • {group.expenses.length} expenses
-                    </p>
-                  </button>
+                  <div key={group.id} className="flex items-center justify-between">
+                    <button
+                      onClick={() => setSelectedGroup(group)}
+                      className={`flex-1 text-left p-3 rounded-lg transition-all ${
+                        selectedGroup?.id === group.id 
+                          ? 'bg-primary/20 border-primary/40' 
+                          : 'bg-muted/30 hover:bg-muted/50'
+                      } border`}
+                    >
+                      <h3 className="font-medium">{group.name}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {group.members.length} members • {group.expenses.length} expenses
+                      </p>
+                    </button>
+                    <Button variant="ghost" size="icon" onClick={() => deleteGroup(group.id)}>
+                      <Trash className="h-4 w-4 text-red-500" />
+                    </Button>
+                  </div>
                 ))}
               </CardContent>
             </Card>
@@ -284,9 +307,7 @@ export const GroupDashboard = () => {
                         <DialogContent className="bg-gradient-card backdrop-blur-sm border-primary/20">
                           <DialogHeader>
                             <DialogTitle>Add New Expense</DialogTitle>
-                            <DialogDescription>
-                              Record a shared expense for the group
-                            </DialogDescription>
+                            <DialogDescription>Record a shared expense for the group</DialogDescription>
                           </DialogHeader>
                           <div className="space-y-4">
                             <div>
@@ -324,7 +345,7 @@ export const GroupDashboard = () => {
                                 </SelectContent>
                               </Select>
                             </div>
-                            <Button onClick={addExpense} className="w-full" variant="hero">
+                            <Button onClick={addOrEditExpense} className="w-full" variant="hero">
                               Add Expense
                             </Button>
                           </div>
@@ -355,7 +376,6 @@ export const GroupDashboard = () => {
                         </div>
                       ))}
                     </div>
-
                     {settlements.length > 0 && (
                       <div className="mt-6">
                         <h4 className="font-medium mb-3 flex items-center">
@@ -367,10 +387,8 @@ export const GroupDashboard = () => {
                             <div key={index} className="p-3 bg-accent/30 rounded-lg text-sm">
                               <span className="font-medium">
                                 {settlement.from === publicKey?.toString() ? 'You owe' : formatAddress(settlement.from) + ' owes'}
-                              </span>
-                              {' '}
-                              <span className="font-bold text-primary">₹{settlement.amount.toFixed(2)}</span>
-                              {' '}
+                              </span>{' '}
+                              <span className="font-bold text-primary">₹{settlement.amount.toFixed(2)}</span>{' '}
                               <span>
                                 to {settlement.to === publicKey?.toString() ? 'you' : formatAddress(settlement.to)}
                               </span>
@@ -401,7 +419,12 @@ export const GroupDashboard = () => {
                           <div key={expense.id} className="p-4 bg-muted/30 rounded-lg">
                             <div className="flex items-center justify-between mb-2">
                               <h4 className="font-medium">{expense.description}</h4>
-                              <span className="font-bold text-lg">₹{expense.amount.toFixed(2)}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-lg">₹{expense.amount.toFixed(2)}</span>
+                                <Button variant="ghost" size="icon" onClick={() => editExpense(expense)}>
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              </div>
                             </div>
                             <div className="text-sm text-muted-foreground">
                               <p>Paid by: {expense.paidBy === publicKey?.toString() ? 'You' : formatAddress(expense.paidBy)}</p>
@@ -419,6 +442,54 @@ export const GroupDashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Edit Expense Dialog */}
+      <Dialog open={isEditExpenseOpen} onOpenChange={setIsEditExpenseOpen}>
+        <DialogContent className="bg-gradient-card backdrop-blur-sm border-primary/20">
+          <DialogHeader>
+            <DialogTitle>Edit Expense</DialogTitle>
+            <DialogDescription>Update this expense details</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="description">Description *</Label>
+              <Input
+                id="description"
+                value={expenseDescription}
+                onChange={(e) => setExpenseDescription(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="amount">Amount (₹) *</Label>
+              <Input
+                id="amount"
+                type="number"
+                step="0.01"
+                value={expenseAmount}
+                onChange={(e) => setExpenseAmount(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="paidBy">Paid By *</Label>
+              <Select value={expensePaidBy} onValueChange={setExpensePaidBy}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Who paid for this?" />
+                </SelectTrigger>
+                <SelectContent>
+                  {selectedGroup?.members.map(member => (
+                    <SelectItem key={member} value={member}>
+                      {member === publicKey?.toString() ? 'You' : formatAddress(member)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button onClick={addOrEditExpense} className="w-full" variant="hero">
+              Save Changes
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
