@@ -5,6 +5,7 @@ import { BN } from '@coral-xyz/anchor';
 import { useToast } from './use-toast';
 
 export interface OnChainGroup {
+  groupId: BN;
   creator: PublicKey;
   members: PublicKey[];
   totalExpenses: BN;

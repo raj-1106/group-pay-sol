@@ -10,6 +10,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Plus, Users, Receipt, TrendingUp, TrendingDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useRoomiesplit } from '@/hooks/use-roomiesplit';
+import { ManageMemberNames } from '@/components/manage-member-names';
 
 interface Expense {
   id: string;
@@ -28,16 +30,25 @@ interface Group {
   members: string[];
   expenses: Expense[];
   createdAt: string;
+  groupId?: number;
+  isBlockchain?: boolean;
+}
+
+interface MemberInfo {
+  address: string;
+  name: string;
 }
 
 export const GroupDashboard = () => {
   const { connected, publicKey } = useWallet();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { getUserGroups, fetchGroup } = useRoomiesplit();
   
   const [groups, setGroups] = useState<Group[]>([]);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
+  const [memberNames, setMemberNames] = useState<{[key: string]: string}>({});
   
   // Add expense form state
   const [expenseDescription, setExpenseDescription] = useState('');
@@ -51,14 +62,45 @@ export const GroupDashboard = () => {
     }
   }, [connected]);
 
-  const loadGroups = () => {
-    const savedGroups = JSON.parse(localStorage.getItem('groups') || '[]') as Group[];
-    const userGroups = savedGroups.filter(group => 
-      group.members.includes(publicKey?.toString() || '')
-    );
-    setGroups(userGroups);
-    if (userGroups.length > 0 && !selectedGroup) {
-      setSelectedGroup(userGroups[0]);
+  const loadGroups = async () => {
+    try {
+      // Load local groups
+      const savedGroups = JSON.parse(localStorage.getItem('groups') || '[]') as Group[];
+      const localGroups = savedGroups.filter(group => 
+        group.members.includes(publicKey?.toString() || '')
+      );
+
+      // Load blockchain groups
+      const blockchainGroups = await getUserGroups();
+      const formattedBlockchainGroups: Group[] = blockchainGroups.map(group => ({
+        id: `blockchain-${group.creator.toString()}-${group.groupId.toString()}`,
+        name: `Group ${group.groupId.toString()}`,
+        description: `Blockchain group with ${group.members.length} members`,
+        creator: group.creator.toString(),
+        members: group.members.map(m => m.toString()),
+        expenses: [],
+        createdAt: new Date().toISOString(),
+        groupId: Number(group.groupId.toString()),
+        isBlockchain: true
+      }));
+
+      // Load member names from localStorage
+      const savedMemberNames = JSON.parse(localStorage.getItem('memberNames') || '{}');
+      setMemberNames(savedMemberNames);
+
+      const allGroups = [...localGroups, ...formattedBlockchainGroups];
+      setGroups(allGroups);
+      
+      if (allGroups.length > 0 && !selectedGroup) {
+        setSelectedGroup(allGroups[0]);
+      }
+    } catch (error) {
+      console.error('Error loading groups:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load blockchain groups",
+        variant: "destructive",
+      });
     }
   };
 
@@ -138,6 +180,17 @@ export const GroupDashboard = () => {
 
   const formatAddress = (address: string) => {
     return `${address.slice(0, 8)}...${address.slice(-8)}`;
+  };
+
+  const getMemberName = (address: string) => {
+    if (address === publicKey?.toString()) return 'You';
+    return memberNames[address] || formatAddress(address);
+  };
+
+  const updateMemberName = (address: string, name: string) => {
+    const updatedNames = { ...memberNames, [address]: name };
+    setMemberNames(updatedNames);
+    localStorage.setItem('memberNames', JSON.stringify(updatedNames));
   };
 
   const getSettlements = () => {
@@ -271,16 +324,30 @@ export const GroupDashboard = () => {
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <div>
-                        <CardTitle>{selectedGroup.name}</CardTitle>
+                        <CardTitle className="flex items-center gap-2">
+                          {selectedGroup.name}
+                          {selectedGroup.isBlockchain && (
+                            <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded">
+                              Blockchain
+                            </span>
+                          )}
+                        </CardTitle>
                         <CardDescription>{selectedGroup.description}</CardDescription>
                       </div>
-                      <Dialog open={isAddExpenseOpen} onOpenChange={setIsAddExpenseOpen}>
-                        <DialogTrigger asChild>
-                          <Button variant="hero">
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add Expense
-                          </Button>
-                        </DialogTrigger>
+                       <div className="flex gap-2">
+                         <ManageMemberNames
+                           members={selectedGroup.members}
+                           memberNames={memberNames}
+                           onUpdateMemberName={updateMemberName}
+                           currentUserAddress={publicKey?.toString() || ''}
+                         />
+                         <Dialog open={isAddExpenseOpen} onOpenChange={setIsAddExpenseOpen}>
+                           <DialogTrigger asChild>
+                             <Button variant="hero">
+                               <Plus className="h-4 w-4 mr-2" />
+                               Add Expense
+                             </Button>
+                           </DialogTrigger>
                         <DialogContent className="bg-gradient-card backdrop-blur-sm border-primary/20">
                           <DialogHeader>
                             <DialogTitle>Add New Expense</DialogTitle>
@@ -315,21 +382,22 @@ export const GroupDashboard = () => {
                                 <SelectTrigger>
                                   <SelectValue placeholder="Who paid for this?" />
                                 </SelectTrigger>
-                                <SelectContent>
-                                  {selectedGroup.members.map(member => (
-                                    <SelectItem key={member} value={member}>
-                                      {member === publicKey?.toString() ? 'You' : formatAddress(member)}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
+                                 <SelectContent>
+                                   {selectedGroup.members.map(member => (
+                                     <SelectItem key={member} value={member}>
+                                       {getMemberName(member)}
+                                     </SelectItem>
+                                   ))}
+                                 </SelectContent>
                               </Select>
                             </div>
                             <Button onClick={addExpense} className="w-full" variant="hero">
                               Add Expense
                             </Button>
                           </div>
-                        </DialogContent>
-                      </Dialog>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
                     </div>
                   </CardHeader>
                 </Card>
@@ -344,11 +412,11 @@ export const GroupDashboard = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
-                      {Object.entries(balances).map(([member, balance]) => (
-                        <div key={member} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                          <span className="font-medium">
-                            {member === publicKey?.toString() ? 'You' : formatAddress(member)}
-                          </span>
+                       {Object.entries(balances).map(([member, balance]) => (
+                         <div key={member} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                           <span className="font-medium">
+                             {getMemberName(member)}
+                           </span>
                           <span className={`font-bold ${balance > 0 ? 'text-green-500' : balance < 0 ? 'text-red-500' : 'text-muted-foreground'}`}>
                             {balance > 0 ? '+' : ''}₹{balance.toFixed(2)}
                           </span>
@@ -363,19 +431,19 @@ export const GroupDashboard = () => {
                           Suggested Settlements
                         </h4>
                         <div className="space-y-2">
-                          {settlements.map((settlement, index) => (
-                            <div key={index} className="p-3 bg-accent/30 rounded-lg text-sm">
-                              <span className="font-medium">
-                                {settlement.from === publicKey?.toString() ? 'You owe' : formatAddress(settlement.from) + ' owes'}
-                              </span>
-                              {' '}
-                              <span className="font-bold text-primary">₹{settlement.amount.toFixed(2)}</span>
-                              {' '}
-                              <span>
-                                to {settlement.to === publicKey?.toString() ? 'you' : formatAddress(settlement.to)}
-                              </span>
-                            </div>
-                          ))}
+                           {settlements.map((settlement, index) => (
+                             <div key={index} className="p-3 bg-accent/30 rounded-lg text-sm">
+                               <span className="font-medium">
+                                 {settlement.from === publicKey?.toString() ? 'You owe' : getMemberName(settlement.from) + ' owes'}
+                               </span>
+                               {' '}
+                               <span className="font-bold text-primary">₹{settlement.amount.toFixed(2)}</span>
+                               {' '}
+                               <span>
+                                 to {settlement.to === publicKey?.toString() ? 'you' : getMemberName(settlement.to)}
+                               </span>
+                             </div>
+                           ))}
                         </div>
                       </div>
                     )}
@@ -403,8 +471,8 @@ export const GroupDashboard = () => {
                               <h4 className="font-medium">{expense.description}</h4>
                               <span className="font-bold text-lg">₹{expense.amount.toFixed(2)}</span>
                             </div>
-                            <div className="text-sm text-muted-foreground">
-                              <p>Paid by: {expense.paidBy === publicKey?.toString() ? 'You' : formatAddress(expense.paidBy)}</p>
+                             <div className="text-sm text-muted-foreground">
+                               <p>Paid by: {getMemberName(expense.paidBy)}</p>
                               <p>Split between: {expense.participants.length} people</p>
                               <p>Date: {new Date(expense.date).toLocaleDateString()}</p>
                             </div>
