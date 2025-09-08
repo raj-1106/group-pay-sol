@@ -59,12 +59,19 @@ export const useRoomiesplit = () => {
 
       return { groupAddress: groupPDA, transaction: tx };
     } catch (error: any) {
+      console.log('Full error object:', error);
+      console.log('Error message:', error?.message);
+      console.log('Error logs:', error?.logs);
+      console.log('Error code:', error?.code);
+      
       let errorDescription = "Failed to create group on-chain";
       
       if (error?.message?.includes('Account') && error?.message?.includes('already in use')) {
         errorDescription = "Group already exists for this wallet and group ID. Try a different group ID.";
       } else if (error?.message?.includes('insufficient funds')) {
         errorDescription = "Insufficient SOL for transaction fees";
+      } else if (error?.logs?.some((log: string) => log.includes('already in use'))) {
+        errorDescription = "Group already exists for this wallet and group ID. Try a different group ID.";
       } else if (error?.message) {
         errorDescription = error.message;
       }
