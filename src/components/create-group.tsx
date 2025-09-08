@@ -119,6 +119,15 @@ export const CreateGroup = () => {
       return;
     }
 
+    if (useBlockchain && members.length > 4) {
+      toast({
+        title: "Too Many Members",
+        description: "Blockchain groups can have maximum 4 additional members (5 total including you)",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsCreating(true);
     
     try {
@@ -310,7 +319,11 @@ export const CreateGroup = () => {
                       onChange={(e) => setMemberAddress(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && addMember()}
                     />
-                    <Button onClick={addMember} variant="outline">
+                    <Button 
+                      onClick={addMember} 
+                      variant="outline"
+                      disabled={useBlockchain && members.length >= 4}
+                    >
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
@@ -355,6 +368,7 @@ export const CreateGroup = () => {
                 {members.length === 0 && (
                   <p className="text-muted-foreground text-sm">
                     Add names and wallet addresses of friends you want to share expenses with
+                    {useBlockchain && " (max 4 additional members for blockchain groups)"}
                   </p>
                 )}
               </div>
