@@ -31,17 +31,36 @@ export const useRoomiesplit = () => {
   const { toast } = useToast();
 
   const createGroup = async (memberAddresses: string[], groupId: number = 0) => {
+    console.log('createGroup called with:', { memberAddresses, groupId, publicKey: publicKey?.toString() });
+    
     if (!program || !publicKey || !signTransaction) {
       throw new Error('Wallet not connected or program not available');
     }
 
     try {
       // Convert member addresses to PublicKeys
-      const members = memberAddresses.map(addr => new PublicKey(addr));
+      console.log('Converting addresses to PublicKeys:', memberAddresses);
+      const members = memberAddresses.map(addr => {
+        console.log('Converting address:', addr);
+        return new PublicKey(addr);
+      });
+      console.log('Converted members:', members.map(m => m.toString()));
       
       // Use provided groupId or default to 0
       const groupIdBN = new BN(groupId);
       const [groupPDA] = getGroupPDA(publicKey, groupIdBN);
+      console.log('Group PDA:', groupPDA.toString());
+      console.log('Group ID BN:', groupIdBN.toString());
+
+      console.log('Calling program.methods.createGroup with:', {
+        groupId: groupIdBN.toString(),
+        members: members.map(m => m.toString()),
+        accounts: {
+          group: groupPDA.toString(),
+          creator: publicKey.toString(),
+          systemProgram: SystemProgram.programId.toString()
+        }
+      });
 
       const tx = await (program as any).methods
         .createGroup(groupIdBN, members)
@@ -63,6 +82,7 @@ export const useRoomiesplit = () => {
       console.log('Error message:', error?.message);
       console.log('Error logs:', error?.logs);
       console.log('Error code:', error?.code);
+      console.log('Error transactionLogs:', error?.transactionLogs);
       
       let errorDescription = "Failed to create group on-chain";
       
@@ -72,6 +92,10 @@ export const useRoomiesplit = () => {
         errorDescription = "Insufficient SOL for transaction fees";
       } else if (error?.logs?.some((log: string) => log.includes('already in use'))) {
         errorDescription = "Group already exists for this wallet and group ID. Try a different group ID.";
+      } else if (error?.transactionLogs?.some((log: string) => log.includes('custom program error: 0x0'))) {
+        errorDescription = "Too many members in group. Max 5 additional members allowed.";
+      } else if (error?.message?.includes('custom program error: 0x0')) {
+        errorDescription = "Too many members in group. Max 5 additional members allowed.";
       } else if (error?.message) {
         errorDescription = error.message;
       }
